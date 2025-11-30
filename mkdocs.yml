@@ -182,7 +182,7 @@ nav:
       - Overview: api-reference/experimental.md
       - Bidirectional Streaming:
         - Agent: api-reference/experimental/bidi/agent/agent.md
-        - Models: api-reference/experimental/bidi/model/model.md
+        - Models: api-reference/experimental/bidi/models/model.md
         - Events: api-reference/experimental/bidi/types/events.md
         - IO: api-reference/experimental/bidi/io/io.md
     - Handlers: api-reference/handlers.md
