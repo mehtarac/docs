@@ -1,4 +1,4 @@
-# Bidirectional Streaming Agent
+# Events
 
 <!-- TODO: Add API reference documentation -->
 

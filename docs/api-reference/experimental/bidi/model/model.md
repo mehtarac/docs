@@ -1,4 +1,4 @@
-# Bidirectional Streaming IO
+# Models
 
 <!-- TODO: Add API reference documentation -->
 

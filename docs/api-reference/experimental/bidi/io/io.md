@@ -1,4 +1,4 @@
-# Bidirectional Streaming Types
+# IO
 
 <!-- TODO: Add API reference documentation -->
 
