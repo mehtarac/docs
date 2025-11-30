@@ -139,9 +139,12 @@ And that's it! We now have a voice-enabled agent that can:
 - Respond with natural voice output
 - Handle interruptions when you start speaking
 
+!!! note "Stopping the Conversation"
+    The `run()` method runs indefinitely. See [Controlling Conversation Lifecycle](#controlling-conversation-lifecycle) for proper ways to stop conversations.
+
 ## Adding Text I/O
 
-You can combine audio with text input/output for debugging or multi-modal interactions:
+Combine audio with text input/output for debugging or multi-modal interactions:
 
 ```python
 import asyncio
@@ -168,6 +171,151 @@ asyncio.run(main())
 ```
 
 Now you'll see transcripts printed to the console while audio plays through your speakers.
+
+## Controlling Conversation Lifecycle
+
+Both `run()` and `receive()` run indefinitely by default. Here are the proper ways to control when conversations start and stop:
+
+### Using run() with Keyboard Interrupt
+
+The simplest approach for testing is to use `Ctrl+C`:
+
+```python
+import asyncio
+from strands.experimental.bidi import BidiAgent, BidiAudioIO
+from strands.experimental.bidi.models import BidiNovaSonicModel
+
+async def main():
+    model = BidiNovaSonicModel()
+    agent = BidiAgent(model=model)
+    audio_io = BidiAudioIO()
+    
+    try:
+        # Runs indefinitely until interrupted
+        await agent.run(
+            inputs=[audio_io.input()],
+            outputs=[audio_io.output()]
+        )
+    except KeyboardInterrupt:
+        print("\nConversation interrupted by user")
+    finally:
+        # stop() should only be called after run() exits
+        await agent.stop()
+
+asyncio.run(main())
+```
+
+### Using receive() with Exit Conditions
+
+When manually processing events, implement explicit exit conditions:
+
+```python
+import asyncio
+from strands.experimental.bidi import BidiAgent
+from strands.experimental.bidi.models import BidiNovaSonicModel
+from strands.experimental.bidi.types.events import (
+    BidiResponseCompleteEvent,
+    BidiConnectionCloseEvent
+)
+
+async def main():
+    model = BidiNovaSonicModel()
+    agent = BidiAgent(model=model)
+    
+    await agent.start()
+    
+    # Send initial message
+    await agent.send("Tell me three facts about Python")
+    
+    # Process events with exit condition
+    async for event in agent.receive():
+        if isinstance(event, BidiResponseCompleteEvent):
+            print("Response complete, exiting...")
+            break  # Exit the receive loop
+        
+        elif isinstance(event, BidiConnectionCloseEvent):
+            print("Connection closed")
+            break
+    
+    # stop() should only be called after exiting receive loop
+    await agent.stop()
+
+asyncio.run(main())
+```
+
+### Using a Message Counter
+
+For multi-turn conversations with a limit:
+
+```python
+import asyncio
+from strands.experimental.bidi import BidiAgent
+from strands.experimental.bidi.models import BidiNovaSonicModel
+from strands.experimental.bidi.types.events import BidiResponseCompleteEvent
+
+async def main():
+    model = BidiNovaSonicModel()
+    agent = BidiAgent(model=model)
+    
+    await agent.start()
+    
+    max_turns = 3
+    turn_count = 0
+    
+    questions = [
+        "What is Python?",
+        "What is asyncio?",
+        "What are coroutines?"
+    ]
+    
+    # Send first question
+    await agent.send(questions[turn_count])
+    
+    async for event in agent.receive():
+        if isinstance(event, BidiResponseCompleteEvent):
+            turn_count += 1
+            
+            if turn_count >= max_turns:
+                print(f"Completed {max_turns} turns, exiting...")
+                break
+            
+            # Send next question
+            await agent.send(questions[turn_count])
+    
+    # stop() should only be called after exiting receive loop
+    await agent.stop()
+
+asyncio.run(main())
+```
+
+### Using Context Manager (Automatic Cleanup)
+
+The context manager automatically calls `stop()` when exiting:
+
+```python
+import asyncio
+from strands.experimental.bidi import BidiAgent
+from strands.experimental.bidi.models import BidiNovaSonicModel
+from strands.experimental.bidi.types.events import BidiResponseCompleteEvent
+
+async def main():
+    model = BidiNovaSonicModel()
+    
+    # Context manager handles start/stop automatically
+    async with BidiAgent(model=model) as agent:
+        await agent.send("Tell me a joke")
+        
+        async for event in agent.receive():
+            if isinstance(event, BidiResponseCompleteEvent):
+                break  # Exit receive loop
+    
+    # stop() called automatically when exiting context
+
+asyncio.run(main())
+```
+
+!!! warning "Important: Call stop() After Exiting Loops"
+    Always call `agent.stop()` **after** exiting the `run()` or `receive()` loop, never during. Calling `stop()` while still receiving events can cause errors. The context manager pattern handles this automatically.
 
 ## Adding Tools to Your Agent
 
@@ -370,7 +518,7 @@ model = BidiGeminiLiveModel(
 
 ## Configuring Audio Settings
 
-You can customize audio configuration for both the model and I/O:
+Customize audio configuration for both the model and I/O:
 
 ```python
 from strands.experimental.bidi import BidiAgent, BidiAudioIO
@@ -443,33 +591,41 @@ Interruptions are detected via voice activity detection (VAD) and handled automa
 3. Audio output buffer cleared
 4. Model ready for new input
 
-## Using Context Manager
+## Manual Start and Stop
 
-For automatic resource cleanup, use the async context manager:
+If you need more control over the agent lifecycle, you can manually call `start()` and `stop()`:
 
 ```python
 import asyncio
-from strands.experimental.bidi import BidiAgent, BidiAudioIO
+from strands.experimental.bidi import BidiAgent
 from strands.experimental.bidi.models import BidiNovaSonicModel
+from strands.experimental.bidi.types.events import BidiResponseCompleteEvent
 
 async def main():
     model = BidiNovaSonicModel()
-    audio_io = BidiAudioIO()
+    agent = BidiAgent(model=model)
     
-    # Context manager handles start/stop automatically
-    async with BidiAgent(model=model) as agent:
-        await agent.run(
-            inputs=[audio_io.input()],
-            outputs=[audio_io.output()]
-        )
-    # Agent automatically stopped and cleaned up
+    # Manually start the agent
+    await agent.start()
+    
+    try:
+        await agent.send("What is Python?")
+        
+        async for event in agent.receive():
+            if isinstance(event, BidiResponseCompleteEvent):
+                break
+    finally:
+        # Always stop after exiting receive loop
+        await agent.stop()
 
 asyncio.run(main())
 ```
 
+See [Controlling Conversation Lifecycle](#controlling-conversation-lifecycle) for more patterns and best practices.
+
 ## Passing Context to Tools
 
-You can pass custom context to tools during execution:
+Pass custom context to tools during execution:
 
 ```python
 import asyncio
