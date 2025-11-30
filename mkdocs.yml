@@ -119,6 +119,15 @@ nav:
       - Experimental:
         - AgentConfig: user-guide/concepts/experimental/agent-config.md
         - MultiAgentHooks: user-guide/concepts/experimental/multi-agent-hooks.md
+        - Bidirectional Streaming:
+          - Quickstart: user-guide/concepts/experimental/bidirectional-streaming/quickstart.md
+          - Agent: user-guide/concepts/experimental/bidirectional-streaming/agent/agent.md
+          - Models:
+            - Nova Sonic: user-guide/concepts/experimental/bidirectional-streaming/models/nova_sonic.md
+            - Gemini Live: user-guide/concepts/experimental/bidirectional-streaming/models/gemini_live.md
+            - OpenAI Realtime: user-guide/concepts/experimental/bidirectional-streaming/models/openai_realtime.md
+          - Events: user-guide/concepts/experimental/bidirectional-streaming/types/events.md
+          - IO: user-guide/concepts/experimental/bidirectional-streaming/io/io.md
     - Safety & Security:
       - Responsible AI: user-guide/safety-security/responsible-ai.md
       - Guardrails: user-guide/safety-security/guardrails.md
@@ -169,7 +178,13 @@ nav:
   - API Reference:
     - Agent: api-reference/agent.md
     - Event Loop: api-reference/event-loop.md
-    - Experimental: api-reference/experimental.md
+    - Experimental:
+      - Overview: api-reference/experimental.md
+      - Bidirectional Streaming:
+        - Agent: api-reference/experimental/bidi/agent/agent.md
+        - Models: api-reference/experimental/bidi/models/model.md
+        - Events: api-reference/experimental/bidi/types/events.md
+        - IO: api-reference/experimental/bidi/io/io.md
     - Handlers: api-reference/handlers.md
     - Hooks: api-reference/hooks.md
     - Interrupt: api-reference/interrupt.md
