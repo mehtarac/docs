@@ -127,6 +127,7 @@ nav:
             - Gemini Live: user-guide/concepts/experimental/bidirectional-streaming/models/gemini_live.md
             - OpenAI Realtime: user-guide/concepts/experimental/bidirectional-streaming/models/openai_realtime.md
           - Events: user-guide/concepts/experimental/bidirectional-streaming/types/events.md
+          - IO: user-guide/concepts/experimental/bidirectional-streaming/io/io.md
     - Safety & Security:
       - Responsible AI: user-guide/safety-security/responsible-ai.md
       - Guardrails: user-guide/safety-security/guardrails.md
@@ -177,7 +178,13 @@ nav:
   - API Reference:
     - Agent: api-reference/agent.md
     - Event Loop: api-reference/event-loop.md
-    - Experimental: api-reference/experimental.md
+    - Experimental:
+      - Overview: api-reference/experimental.md
+      - Bidirectional Streaming:
+        - Agent: api-reference/experimental/bidi/agent/agent.md
+        - Models: api-reference/experimental/bidi/model/model.md
+        - Events: api-reference/experimental/bidi/types/events.md
+        - IO: api-reference/experimental/bidi/io/io.md
     - Handlers: api-reference/handlers.md
     - Hooks: api-reference/hooks.md
     - Interrupt: api-reference/interrupt.md
@@ -187,12 +194,6 @@ nav:
     - Telemetry: api-reference/telemetry.md
     - Tools: api-reference/tools.md
     - Types: api-reference/types.md
-    - Experimental:
-      - Bidirectional Streaming:
-        - Agent: api-reference/experimental/bidi/agent/agent.md
-        - Model: api-reference/experimental/bidi/model/model.md
-        - Events: api-reference/experimental/bidi/types/events.md
-        - IO: api-reference/experimental/bidi/io/io.md
 
 exclude_docs: |
   node_modules
