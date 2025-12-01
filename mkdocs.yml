@@ -190,12 +190,14 @@ nav:
     - Tools: api-reference/tools.md
     - Types: api-reference/types.md
     - Experimental:
-      - Overview: api-reference/experimental.md
+      - Agent Config: api-reference/experimental/agent_config.md
+      - Hooks: api-reference/experimental/hooks.md
       - Bidirectional Streaming:
-        - Agent: api-reference/experimental/bidi/agent/agent.md
-        - Models: api-reference/experimental/bidi/models/model.md
-        - Events: api-reference/experimental/bidi/types/events.md
-        - IO: api-reference/experimental/bidi/io/io.md
+        - Agent: api-reference/experimental/bidi/agent.md
+        - IO: api-reference/experimental/bidi/io.md
+        - Models: api-reference/experimental/bidi/models.md
+        - Tools: api-reference/experimental/bidi/tools.md
+        - Events: api-reference/experimental/bidi/types.md
 
 exclude_docs: |
   node_modules
