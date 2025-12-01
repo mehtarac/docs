@@ -121,7 +121,9 @@ nav:
         - MultiAgentHooks: user-guide/concepts/experimental/multi-agent-hooks.md
         - Bidirectional Streaming:
           - Quickstart: user-guide/concepts/experimental/bidirectional-streaming/quickstart.md
-          - Agent: user-guide/concepts/experimental/bidirectional-streaming/agent/agent.md
+          - Agent: user-guide/concepts/experimental/bidirectional-streaming/agent.md
+          - Hooks: user-guide/concepts/experimental/bidirectional-streaming/hooks.md
+          - Session Management: user-guide/concepts/experimental/bidirectional-streaming/session-management.md
           - Models:
             - Nova Sonic: user-guide/concepts/experimental/bidirectional-streaming/models/nova_sonic.md
             - Gemini Live: user-guide/concepts/experimental/bidirectional-streaming/models/gemini_live.md
