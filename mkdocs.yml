@@ -122,13 +122,14 @@ nav:
         - Bidirectional Streaming:
           - Quickstart: user-guide/concepts/experimental/bidirectional-streaming/quickstart.md
           - Agent: user-guide/concepts/experimental/bidirectional-streaming/agent.md
-          - Hooks: user-guide/concepts/experimental/bidirectional-streaming/hooks.md
-          - Session Management: user-guide/concepts/experimental/bidirectional-streaming/session-management.md
           - Models:
             - Nova Sonic: user-guide/concepts/experimental/bidirectional-streaming/models/nova_sonic.md
             - Gemini Live: user-guide/concepts/experimental/bidirectional-streaming/models/gemini_live.md
             - OpenAI Realtime: user-guide/concepts/experimental/bidirectional-streaming/models/openai_realtime.md
           - IO: user-guide/concepts/experimental/bidirectional-streaming/io/io.md
+          - Hooks: user-guide/concepts/experimental/bidirectional-streaming/hooks.md
+          - Session Management: user-guide/concepts/experimental/bidirectional-streaming/session-management.md
+          - Observability: user-guide/concepts/experimental/bidirectional-streaming/otel.md
     - Safety & Security:
       - Responsible AI: user-guide/safety-security/responsible-ai.md
       - Guardrails: user-guide/safety-security/guardrails.md
