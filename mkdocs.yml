@@ -197,7 +197,7 @@ nav:
         - IO: api-reference/experimental/bidi/io.md
         - Models: api-reference/experimental/bidi/models.md
         - Tools: api-reference/experimental/bidi/tools.md
-        - Events: api-reference/experimental/bidi/types.md
+        - Types: api-reference/experimental/bidi/types.md
 
 exclude_docs: |
   node_modules
