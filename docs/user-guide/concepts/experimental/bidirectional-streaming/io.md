@@ -1,4 +1,7 @@
-# I/O Channels
+# I/O Channels [Experimental]
+
+!!! warning "Experimental Feature"
+    This feature is experimental and may change in future versions. Use with caution in production environments.
 
 I/O channels handle the flow of data between your application and the bidirectional streaming agent. They manage input sources (microphone, keyboard, WebSocket) and output destinations (speakers, console, UI) while the agent focuses on conversation logic and model communication.
 

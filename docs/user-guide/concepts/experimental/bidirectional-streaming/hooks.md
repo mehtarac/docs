@@ -1,4 +1,7 @@
-# Hooks
+# Hooks [Experimental]
+
+!!! warning "Experimental Feature"
+    This feature is experimental and may change in future versions. Use with caution in production environments.
 
 Hooks provide a composable extensibility mechanism for extending `BidiAgent` functionality by subscribing to events throughout the bidirectional streaming lifecycle. The hook system enables both built-in components and user code to react to agent behavior through strongly-typed event callbacks.
 
