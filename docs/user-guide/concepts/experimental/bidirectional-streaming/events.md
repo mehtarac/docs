@@ -560,39 +560,6 @@ asyncio.run(main())
 
 ## Hook Events
 
-Hook events operate separately from the streaming events described above. While streaming events flow through `agent.receive()` as the conversation progresses, hook events are callback-based and trigger at specific lifecycle points in the agent's execution.
+Hook events are a separate concept from streaming events. While streaming events flow through `agent.receive()` during conversations, hook events are callbacks that trigger at specific lifecycle points (like initialization, message added, or interruption). Hook events allow you to inject custom logic for cross-cutting concerns like logging, analytics, and session persistence without processing the event stream directly.
 
-**Key Differences:**
-
-**Streaming Events:**
-- Received via `agent.receive()` in your event loop
-- Flow continuously during the conversation
-- Include audio, transcripts, tool calls, and connection updates
-- Processed sequentially as they arrive
-
-**Hook Events:**
-- Registered as callbacks on the agent
-- Triggered at specific lifecycle moments (initialization, message added, interruption, etc.)
-- Execute synchronously at the point they're triggered
-- Allow injecting custom logic without processing the event stream
-
-**Example:**
-
-```python
-from strands.experimental.bidi import BidiAgent
-from strands.experimental.bidi.hooks.events import BidiMessageAddedEvent
-
-class MessageLogger:
-    async def on_message_added(self, event: BidiMessageAddedEvent):
-        # This runs automatically when a message is added
-        print(f"Message added: {event.message['role']}")
-
-agent = BidiAgent(
-    model=model,
-    hooks=[MessageLogger()]
-)
-```
-
-Hook events are useful for cross-cutting concerns like logging, analytics, session persistence, and custom validation that should happen at specific lifecycle points regardless of the event stream processing.
-
-For complete details on available hook events and usage patterns, see the [Hooks](hooks.md) documentation.
+For details on hook events and usage patterns, see the [Hooks](hooks.md) documentation.
