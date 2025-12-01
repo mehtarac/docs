@@ -452,6 +452,80 @@ async def main():
 asyncio.run(main())
 ```
 
+## WebSocket as I/O Channel
+
+WebSocket connections can serve as I/O channels for web applications. Since the agent's `run()` method accepts any callable that sends and receives JSON, WebSocket methods work directly as input and output channels without requiring custom wrappers.
+
+### FastAPI Example
+
+```python
+from fastapi import FastAPI, WebSocket
+from strands.experimental.bidi import BidiAgent
+from strands.experimental.bidi.models import BidiNovaSonicModel
+from strands_tools import calculator
+
+app = FastAPI()
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time bidirectional communication."""
+    await websocket.accept()
+    
+    model = BidiNovaSonicModel()
+    agent = BidiAgent(
+        model=model,
+        tools=[calculator],
+        system_prompt="You are a helpful assistant."
+    )
+    
+    try:
+        # Pass WebSocket send/receive directly to agent.run()
+        await agent.run(
+            inputs=[websocket.receive_json],
+            outputs=[websocket.send_json]
+        )
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        await websocket.close()
+```
+
+The client sends audio events as JSON:
+
+```javascript
+// Client sends audio from microphone
+const audioEvent = {
+    type: "bidi_audio_input",
+    audio: base64AudioData,  // base64-encoded PCM
+    format: "pcm",
+    sample_rate: 16000,
+    channels: 1
+};
+websocket.send(JSON.stringify(audioEvent));
+
+// Client receives audio and transcripts
+websocket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    if (data.type === "bidi_audio_stream") {
+        // Play audio response
+        playAudio(data.audio);
+    } else if (data.type === "bidi_transcript_stream") {
+        // Display transcript
+        console.log(`${data.role}: ${data.text}`);
+    }
+};
+```
+
+This pattern enables:
+
+- Real-time audio streaming between browser and agent
+- Live transcription of conversations
+- Tool execution during conversations
+- Multiple concurrent client connections
+
+For production use, add authentication, error handling, connection management, and rate limiting.
+
 ## Next Steps
 
 - [Agent](../agent.md) - Learn about BidiAgent configuration and lifecycle
