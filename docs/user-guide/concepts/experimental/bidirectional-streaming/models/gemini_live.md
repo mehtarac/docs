@@ -32,6 +32,7 @@ async def main() -> None:
         },
         client_config={"api_key": "<GOOGLE_AI_API_KEY>"},
     )
+    # stop_conversation tool allows user to verbally stop agent execution.
     agent = BidiAgent(model=model, tools=[calculator, stop_conversation])
 
     audio_io = BidiAudioIO()
@@ -54,7 +55,7 @@ For details on the supported client configs, see [here](https://googleapis.githu
 | Parameter | Description | Example | Options |
 | --------- | ----------- | ------- | ------- |
 | `audio` | `AudioConfig` instance. | `{"voice": "Kore"}` | [reference](../../../../../api-reference/experimental/bidi/types.md#strands.experimental.bidi.types.model.AudioConfig) |
-| `inference` | Dict of inference fields specified in the Gemini `LiveConnectConfig` | `{"temperature": 0.7}` | [reference](https://googleapis.github.io/python-genai/genai.html#genai.types.LiveConnectConfig)
+| `inference` | Dict of inference fields specified in the Gemini `LiveConnectConfig`. | `{"temperature": 0.7}` | [reference](https://googleapis.github.io/python-genai/genai.html#genai.types.LiveConnectConfig)
 
 For the list of supported voices and languages, see [here](https://docs.cloud.google.com/text-to-speech/docs/list-voices-and-types).
 

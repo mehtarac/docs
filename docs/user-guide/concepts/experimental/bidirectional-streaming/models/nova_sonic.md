@@ -33,6 +33,7 @@ async def main() -> None:
         },
         client_config={"region": "us-east-1"},  # only available in us-east-1, eu-north-1, and ap-northeast-1
     )
+    # stop_conversation tool allows user to verbally stop agent execution.
     agent = BidiAgent(model=model, tools=[calculator, stop_conversation])
 
     audio_io = BidiAudioIO()
@@ -92,7 +93,7 @@ For more details on this approach, please refer to the [boto3 session docs](http
 | Parameter | Description | Example | Options |
 | --------- | ----------- | ------- | ------- |
 | `audio` | `AudioConfig` instance. | `{"voice": "tiffany"}` | [reference](../../../../../api-reference/experimental/bidi/types.md#strands.experimental.bidi.types.model.AudioConfig) |
-| `inference` | Session start `inferenceConfiguration`'s (as snake_case) | `{"top_p": 0.9}` | [reference](https://docs.aws.amazon.com/nova/latest/userguide/input-events.html)
+| `inference` | Session start `inferenceConfiguration`'s (as snake_case). | `{"top_p": 0.9}` | [reference](https://docs.aws.amazon.com/nova/latest/userguide/input-events.html)
 
 ## Troubleshooting
 
