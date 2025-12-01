@@ -788,8 +788,8 @@ Ready to learn more? Check out these resources:
 - [Events](events.md) - Complete guide to bidirectional streaming events
 - [I/O Channels](io/io.md) - Understanding and customizing input/output channels
 - **Model Providers:**
-  - [Nova Sonic](models/nova_sonic.md) - Amazon Bedrock's bidirectional streaming model
-  - [OpenAI Realtime](models/openai_realtime.md) - OpenAI's Realtime API
-  - [Gemini Live](models/gemini_live.md) - Google's Gemini Live API
-- [API Reference](../../../../api-reference/experimental.md) - Complete API documentation
+    - [Nova Sonic](models/nova_sonic.md) - Amazon Bedrock's bidirectional streaming model
+    - [OpenAI Realtime](models/openai_realtime.md) - OpenAI's Realtime API
+    - [Gemini Live](models/gemini_live.md) - Google's Gemini Live API
+- [API Reference](../../../../api-reference/experimental/bidi/agent.md) - Complete API documentation
 
