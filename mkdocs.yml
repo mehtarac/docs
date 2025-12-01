@@ -127,6 +127,7 @@ nav:
             - Gemini Live: user-guide/concepts/experimental/bidirectional-streaming/models/gemini_live.md
             - OpenAI Realtime: user-guide/concepts/experimental/bidirectional-streaming/models/openai_realtime.md
           - IO: user-guide/concepts/experimental/bidirectional-streaming/io.md
+          - Events: user-guide/concepts/experimental/bidirectional-streaming/events.md
           - Hooks: user-guide/concepts/experimental/bidirectional-streaming/hooks.md
           - Session Management: user-guide/concepts/experimental/bidirectional-streaming/session-management.md
           - Observability: user-guide/concepts/experimental/bidirectional-streaming/otel.md
