@@ -32,14 +32,65 @@ async def main():
         # Receive events from model
         async for event in agent.receive():
             print(f"Event: {event['type']}")
-            
-            if event["type"] == "bidi_response_complete":
-                break
 
 asyncio.run(main())
 ```
 
-## Event Categories
+## Input Event Types
+
+Events sent to the model via `agent.send()`.
+
+### BidiTextInputEvent
+
+Send text input to the model.
+
+```python
+await agent.send("What is the weather?")
+# Or explicitly:
+from strands.experimental.bidi.types.events import BidiTextInputEvent
+await agent.send(BidiTextInputEvent(text="What is the weather?", role="user"))
+```
+
+### BidiAudioInputEvent
+
+Send audio input to the model. Audio must be base64-encoded.
+
+```python
+import base64
+from strands.experimental.bidi.types.events import BidiAudioInputEvent
+
+audio_bytes = record_audio()  # Your audio capture logic
+audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+
+await agent.send(BidiAudioInputEvent(
+    audio=audio_base64,
+    format="pcm",
+    sample_rate=16000,
+    channels=1
+))
+```
+
+### BidiImageInputEvent
+
+Send image input to the model. Images must be base64-encoded.
+
+```python
+import base64
+from strands.experimental.bidi.types.events import BidiImageInputEvent
+
+with open("image.jpg", "rb") as f:
+    image_bytes = f.read()
+    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+
+await agent.send(BidiImageInputEvent(
+    image=image_base64,
+    mime_type="image/jpeg"
+))
+```
+
+## Output Event Types
+
+Events received from the model via `agent.receive()`.
 
 ### Connection Lifecycle Events
 
@@ -248,6 +299,9 @@ async for event in agent.receive():
         # Model ready for new input
 ```
 
+!!! note "BidiInterruptionEvent vs Human-in-the-Loop Interrupts"
+    `BidiInterruptionEvent` is different from [human-in-the-loop (HIL) interrupts](../../interrupts.md). BidiInterruptionEvent is emitted when the model detects user speech during audio conversations and automatically stops generating the current response. HIL interrupts pause agent execution to request human approval or input before continuing, typically used for tool execution approval. BidiInterruptionEvent is automatic and audio-specific, while HIL interrupts are programmatic and require explicit handling.
+
 See [Interruptions](agent.md#interruptions) for more details on interruption handling.
 
 ### Tool Events
@@ -339,58 +393,6 @@ async for event in agent.receive():
             raise event.error
 ```
 
-## Input Events
-
-Events sent to the model via `agent.send()`.
-
-### BidiTextInputEvent
-
-Send text input to the model.
-
-```python
-await agent.send("What is the weather?")
-# Or explicitly:
-from strands.experimental.bidi.types.events import BidiTextInputEvent
-await agent.send(BidiTextInputEvent(text="What is the weather?", role="user"))
-```
-
-### BidiAudioInputEvent
-
-Send audio input to the model. Audio must be base64-encoded.
-
-```python
-import base64
-from strands.experimental.bidi.types.events import BidiAudioInputEvent
-
-audio_bytes = record_audio()  # Your audio capture logic
-audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
-
-await agent.send(BidiAudioInputEvent(
-    audio=audio_base64,
-    format="pcm",
-    sample_rate=16000,
-    channels=1
-))
-```
-
-### BidiImageInputEvent
-
-Send image input to the model. Images must be base64-encoded.
-
-```python
-import base64
-from strands.experimental.bidi.types.events import BidiImageInputEvent
-
-with open("image.jpg", "rb") as f:
-    image_bytes = f.read()
-    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-
-await agent.send(BidiImageInputEvent(
-    image=image_base64,
-    mime_type="image/jpeg"
-))
-```
-
 ## Event Flow Examples
 
 ### Basic Audio Conversation
@@ -424,7 +426,6 @@ async def main():
         
         elif event["type"] == "bidi_response_complete":
             print(f"✅ Response complete: {event['stop_reason']}")
-            break
     
     await agent.stop()
 
@@ -463,9 +464,6 @@ async def main():
                 if event["is_final"]:
                     print(f"\n{role}: {current_text}")
                     current_text = ""
-            
-            elif event["type"] == "bidi_response_complete":
-                break
 
 asyncio.run(main())
 ```
@@ -499,8 +497,6 @@ async def main():
             elif event_type == "bidi_response_complete":
                 if event["stop_reason"] == "tool_use":
                     print("   Tool executing in background...")
-                else:
-                    break
 
 asyncio.run(main())
 ```
@@ -531,7 +527,6 @@ async def main():
             elif event["type"] == "bidi_response_complete":
                 if event["stop_reason"] == "interrupted":
                     print(f"Response interrupted {interruption_count} times")
-                break
 
 asyncio.run(main())
 ```
@@ -547,41 +542,57 @@ async def main():
     model = BidiNovaSonicModel()  # 8-minute timeout
     
     async with BidiAgent(model=model) as agent:
-        turn_count = 0
-        
-        while turn_count < 10:  # Multiple conversation turns
-            await agent.send(f"This is turn {turn_count + 1}")
+        # Continuous conversation that handles restarts
+        async for event in agent.receive():
+            if event["type"] == "bidi_connection_restart":
+                print("⚠️ Connection restarting (timeout)...")
+                print("   Conversation history preserved")
+                # Connection resumes automatically
             
-            async for event in agent.receive():
-                if event["type"] == "bidi_connection_restart":
-                    print("⚠️ Connection restarting (timeout)...")
-                    print("   Conversation history preserved")
-                    # Connection resumes automatically
-                
-                elif event["type"] == "bidi_connection_start":
-                    print(f"✅ Connected to {event['model']}")
-                
-                elif event["type"] == "bidi_transcript_stream" and event["is_final"]:
-                    print(f"{event['role']}: {event['text']}")
-                
-                elif event["type"] == "bidi_response_complete":
-                    turn_count += 1
-                    break
+            elif event["type"] == "bidi_connection_start":
+                print(f"✅ Connected to {event['model']}")
             
-            # Simulate time passing between turns
-            await asyncio.sleep(60)  # 1 minute between turns
+            elif event["type"] == "bidi_transcript_stream" and event["is_final"]:
+                print(f"{event['role']}: {event['text']}")
 
 asyncio.run(main())
 ```
 
-## Event Hooks
+## Hook Events
 
-For lifecycle event hooks (like `BidiInterruptionEvent`, `BidiMessageAddedEvent`, etc.), see the [Hooks](hooks.md) documentation.
+Hook events operate separately from the streaming events described above. While streaming events flow through `agent.receive()` as the conversation progresses, hook events are callback-based and trigger at specific lifecycle points in the agent's execution.
 
-## Next Steps
+**Key Differences:**
 
-- [Agent](agent.md) - Learn about BidiAgent configuration and lifecycle
-- [I/O Channels](io.md) - Understanding input/output channels
-- [Hooks](hooks.md) - Lifecycle events and custom hooks
-- [Quickstart](quickstart.md) - Get started with bidirectional streaming
-- [API Reference](../../../../api-reference/experimental/bidi/types.md) - Complete event type documentation
+**Streaming Events:**
+- Received via `agent.receive()` in your event loop
+- Flow continuously during the conversation
+- Include audio, transcripts, tool calls, and connection updates
+- Processed sequentially as they arrive
+
+**Hook Events:**
+- Registered as callbacks on the agent
+- Triggered at specific lifecycle moments (initialization, message added, interruption, etc.)
+- Execute synchronously at the point they're triggered
+- Allow injecting custom logic without processing the event stream
+
+**Example:**
+
+```python
+from strands.experimental.bidi import BidiAgent
+from strands.experimental.bidi.hooks.events import BidiMessageAddedEvent
+
+class MessageLogger:
+    async def on_message_added(self, event: BidiMessageAddedEvent):
+        # This runs automatically when a message is added
+        print(f"Message added: {event.message['role']}")
+
+agent = BidiAgent(
+    model=model,
+    hooks=[MessageLogger()]
+)
+```
+
+Hook events are useful for cross-cutting concerns like logging, analytics, session persistence, and custom validation that should happen at specific lifecycle points regardless of the event stream processing.
+
+For complete details on available hook events and usage patterns, see the [Hooks](hooks.md) documentation.
