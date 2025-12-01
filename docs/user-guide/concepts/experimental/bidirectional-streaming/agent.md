@@ -2,17 +2,6 @@
 
 The `BidiAgent` is a specialized agent designed for real-time bidirectional streaming conversations. Unlike the standard `Agent` that follows a request-response pattern, `BidiAgent` maintains persistent connections that enable continuous audio and text streaming, real-time interruptions, and concurrent tool execution.
 
-
-## What is BidiAgent?
-
-`BidiAgent` extends the core agent concept to support real-time, bidirectional communication with AI models. It's designed for applications that require:
-
-- **Real-time voice conversations** with natural interruptions
-- **Continuous audio streaming** in both directions simultaneously
-- **Persistent connections** that handle multiple conversation turns
-- **Concurrent tool execution** without blocking the conversation
-- **Multi-modal interactions** combining audio, text, and images
-
 ```mermaid
 flowchart TB
     subgraph User
@@ -36,8 +25,6 @@ flowchart TB
         J --> L[Console/UI]
     end
 ```
-
-The key difference from standard agents is that `BidiAgent` operates on a **persistent connection** where input and output happen concurrently, rather than in discrete request-response cycles.
 
 
 ## Agent vs BidiAgent
@@ -65,8 +52,6 @@ print(result.message)  # "The result is 1200"
 - **Discrete cycles**: Each invocation is independent
 - **Message-based**: Operates on complete messages
 - **Tool execution**: Sequential, blocking the response
-- **State management**: Conversation history in `messages` array
-- **Use cases**: Chatbots, CLI tools, batch processing, API endpoints
 
 ### BidiAgent (Bidirectional Streaming)
 
@@ -97,8 +82,6 @@ asyncio.run(main())
 - **Persistent connection**: Single connection for multiple turns
 - **Event-based**: Operates on streaming events
 - **Tool execution**: Concurrent, non-blocking
-- **State management**: Conversation history + connection state
-- **Use cases**: Voice assistants, real-time chat, live transcription, interactive applications
 
 ### When to Use Each
 
@@ -142,62 +125,6 @@ flowchart TB
     K --> D
 ```
 
-### Core Components
-
-#### 1. Event Queue
-
-The loop uses a bounded queue (`maxsize=1`) to manage backpressure:
-
-```python
-self._event_queue = asyncio.Queue(maxsize=1)
-```
-
-This design ensures:
-
-- **Backpressure control**: Model receiver blocks if user isn't consuming events
-- **Memory bounded**: Prevents unbounded event accumulation
-- **Sequential delivery**: Events processed in order
-
-#### 2. Task Pool
-
-All background tasks are tracked in a `_TaskPool`:
-
-```python
-self._task_pool = _TaskPool()
-self._task_pool.create(self._run_model())  # Model receiver task
-self._task_pool.create(self._run_tool(tool_use))  # Tool execution tasks
-```
-
-Benefits:
-
-- **Clean shutdown**: All tasks cancelled on stop
-- **Error propagation**: Task exceptions captured and queued
-- **Concurrent execution**: Multiple tools run simultaneously
-
-#### 3. Send Gate
-
-A gate controls sending during connection restarts:
-
-```python
-self._send_gate = asyncio.Event()
-self._send_gate.set()  # Allow sending
-self._send_gate.clear()  # Block sending during restart
-```
-
-This prevents race conditions when reconnecting after timeouts.
-
-#### 4. Message Lock
-
-Ensures paired messages (tool use + result) are added sequentially:
-
-```python
-async with self._message_lock:
-    self._agent.messages.append(tool_use_message)
-    self._agent.messages.append(tool_result_message)
-```
-
-Critical for maintaining conversation history integrity.
-
 ### Event Flow
 
 #### Startup Sequence
@@ -228,39 +155,6 @@ Critical for maintaining conversation history integrity.
    - Dequeues events from `_event_queue`
    - Yields to user code
    - Continues until stopped
-
-#### Model Event Processing
-
-The `_run_model()` task continuously streams events from the model:
-
-```python
-async def _run_model(self) -> None:
-    try:
-        async for event in self._agent.model.receive():
-            await self._event_queue.put(event)
-            
-            if isinstance(event, BidiTranscriptStreamEvent):
-                if event["is_final"]:
-                    # Add to message history
-                    message = {"role": event["role"], "content": [{"text": event["text"]}]}
-                    await self._add_messages(message)
-            
-            elif isinstance(event, ToolUseStreamEvent):
-                # Spawn concurrent tool execution
-                tool_use = event["current_tool_use"]
-                self._task_pool.create(self._run_tool(tool_use))
-    
-    except Exception as error:
-        await self._event_queue.put(error)
-```
-
-Key behaviors:
-
-- **Continuous streaming**: Runs until connection closes or error
-- **Event queueing**: All events go through the queue
-- **Tool spawning**: Creates concurrent tasks for tool execution
-- **Message tracking**: Adds final transcripts to history
-- **Error handling**: Exceptions queued for user handling
 
 #### Tool Execution
 
@@ -293,13 +187,7 @@ async def _run_tool(self, tool_use: ToolUse) -> None:
         await self.send(tool_result_event)
 ```
 
-Features:
-
-- **Concurrent execution**: Multiple tools run simultaneously
-- **Event streaming**: Tool events queued as they occur
-- **Message pairing**: Tool use + result added atomically
-- **Result forwarding**: Automatically sent back to model
-- **Special handling**: `stop_conversation` tool triggers shutdown
+Multiple tools run simultaneously with events queued as they occur. Tool use and result messages are added atomically to history, and results are automatically sent back to the model (except for the special `stop_conversation` tool which triggers shutdown).
 
 ### Connection Lifecycle
 
@@ -314,43 +202,6 @@ User → send() → Model → receive() → _run_model() → _event_queue → re
                   ↓
             Tool Result → Model
 ```
-
-#### Timeout and Recovery
-
-When a model times out (e.g., Nova Sonic's 8-minute limit):
-
-```python
-async def _restart_connection(self, timeout_error: BidiModelTimeoutError) -> None:
-    # Block sending
-    self._send_gate.clear()
-    
-    # Invoke hooks
-    await self._agent.hooks.invoke_callbacks_async(
-        BidiBeforeConnectionRestartEvent(self._agent, timeout_error)
-    )
-    
-    # Restart model with full history
-    await self._agent.model.stop()
-    await self._agent.model.start(
-        self._agent.system_prompt,
-        self._agent.tool_registry.get_all_tool_specs(),
-        self._agent.messages,
-        **timeout_error.restart_config
-    )
-    
-    # Spawn new receiver task
-    self._task_pool.create(self._run_model())
-    
-    # Invoke hooks
-    await self._agent.hooks.invoke_callbacks_async(
-        BidiAfterConnectionRestartEvent(self._agent, None)
-    )
-    
-    # Unblock sending
-    self._send_gate.set()
-```
-
-This provides seamless reconnection without losing conversation context.
 
 ## Interruptions
 
@@ -373,16 +224,9 @@ flowchart LR
     H --> I
 ```
 
-### Interruption Flow
-
-1. **Detection**: Model's VAD detects user speech
-2. **Event Emission**: `BidiInterruptionEvent` sent to loop
-3. **Buffer Clearing**: Audio output buffer cleared immediately
-4. **Response Termination**: Current response marked as interrupted
-5. **Transcription**: User's speech transcribed and processed
-6. **Ready State**: Model ready to respond to new input
-
 ### Handling Interruptions
+
+The interruption flow: Model's VAD detects user speech → `BidiInterruptionEvent` sent → Audio buffer cleared → Response terminated → User's speech transcribed → Model ready for new input.
 
 #### Automatic Handling (Default)
 
@@ -407,10 +251,7 @@ async def main():
 asyncio.run(main())
 ```
 
-The `BidiAudioIO` output automatically:
-- Clears the audio buffer on `BidiInterruptionEvent`
-- Stops playback immediately
-- Resumes normal operation for the next response
+The `BidiAudioIO` output automatically clears the audio buffer, stops playback immediately, and resumes normal operation for the next response.
 
 #### Manual Handling
 
@@ -452,37 +293,13 @@ asyncio.run(main())
 
 ### Interruption Events
 
-#### BidiInterruptionEvent
+#### Key Events
 
-Emitted when the model detects an interruption:
+**BidiInterruptionEvent** - Emitted when interruption detected:
+- `reason`: `"user_speech"` (most common) or `"error"`
 
-```python
-BidiInterruptionEvent(
-    reason="user_speech"  # or "error"
-)
-```
-
-**Properties:**
-- `reason`: Why the interruption occurred
-  - `"user_speech"`: User started speaking (most common)
-  - `"error"`: Error condition caused interruption
-
-#### BidiResponseCompleteEvent
-
-Includes interruption status:
-
-```python
-BidiResponseCompleteEvent(
-    response_id="resp_123",
-    stop_reason="interrupted"  # or "complete", "error", "tool_use"
-)
-```
-
-**Stop Reasons:**
-- `"complete"`: Response finished normally
-- `"interrupted"`: Response interrupted by user
-- `"error"`: Error occurred
-- `"tool_use"`: Model requested tool execution
+**BidiResponseCompleteEvent** - Includes interruption status:
+- `stop_reason`: `"complete"`, `"interrupted"`, `"error"`, or `"tool_use"`
 
 ### Interruption Hooks
 
@@ -513,21 +330,9 @@ agent = BidiAgent(
 
 ### Provider-Specific Behavior
 
-Different model providers handle interruptions slightly differently:
+**Nova Sonic**: Built-in VAD, always active, fast detection optimized for low latency.
 
-#### Nova Sonic
-
-- **VAD**: Built-in, always active
-- **Detection**: Fast, optimized for low latency
-- **Interruption Signal**: `stopReason: INTERRUPTED` in events
-- **Recovery**: Immediate, ready for new input
-
-#### OpenAI Realtime
-
-- **VAD**: Server-side, configurable
-- **Detection**: Configurable threshold and silence duration
-- **Interruption Signal**: `input_audio_buffer.speech_started` event
-- **Recovery**: Automatic, with `response.cancelled` event
+**OpenAI Realtime**: Server-side VAD with configurable threshold and silence duration:
 
 ```python
 from strands.experimental.bidi.models import BidiOpenAIRealtimeModel
@@ -544,24 +349,15 @@ model = BidiOpenAIRealtimeModel(
 )
 ```
 
-#### Gemini Live
-
-- **VAD**: Built-in, automatic
-- **Detection**: Fast, integrated with transcription
-- **Interruption Signal**: `interrupted` flag in events
-- **Recovery**: Automatic, with session continuity
+**Gemini Live**: Built-in VAD, fast detection integrated with transcription.
 
 ### Best Practices
 
-1. **Always Clear Buffers**: When handling interruptions manually, clear any audio or output buffers immediately to prevent stale content from playing.
-
-2. **Update UI Promptly**: Show visual feedback when interruptions occur to maintain user awareness.
-
-3. **Track Interruption Patterns**: Monitor interruption frequency to identify issues with response length or relevance.
-
-4. **Test VAD Settings**: Adjust VAD sensitivity for your environment (quiet office vs. noisy cafe).
-
-5. **Handle Edge Cases**: Consider rapid interruptions, network delays, and simultaneous tool execution.
+1. **Always Clear Buffers**: When handling interruptions manually, clear audio/output buffers immediately
+2. **Update UI Promptly**: Show visual feedback to maintain user awareness
+3. **Track Interruption Patterns**: Monitor frequency to identify issues with response length or relevance
+4. **Test VAD Settings**: Adjust sensitivity for your environment
+5. **Handle Edge Cases**: Consider rapid interruptions, network delays, and simultaneous tool execution
 
 ### Common Issues
 
@@ -822,22 +618,16 @@ stateDiagram-v2
 
 ```python
 agent = BidiAgent(model=model, tools=[calculator])
-# State: Created
-# - Tool registry initialized
-# - Agent state created
-# - Hooks registered
-# - NOT connected to model
+# Tool registry initialized, agent state created, hooks registered
+# NOT connected to model yet
 ```
 
 #### 2. Starting
 
 ```python
 await agent.start(invocation_state={...})
-# State: Started
-# - Model connection established
-# - Conversation history sent
-# - Background tasks spawned
-# - Ready to send/receive
+# Model connection established, conversation history sent
+# Background tasks spawned, ready to send/receive
 ```
 
 #### 3. Running
@@ -849,24 +639,15 @@ await agent.run(inputs=[...], outputs=[...])
 # Option B: Manual send/receive
 await agent.send("Hello")
 async for event in agent.receive():
-    # Process events
+    # Process events - events streaming, tools executing, messages accumulating
     pass
-
-# State: Running
-# - Events streaming
-# - Tools executing
-# - Messages accumulating
 ```
 
 #### 4. Stopping
 
 ```python
 await agent.stop()
-# State: Stopped
-# - Background tasks cancelled
-# - Model connection closed
-# - Resources cleaned up
-# - Ready for garbage collection
+# Background tasks cancelled, model connection closed, resources cleaned up
 ```
 
 ### Lifecycle Patterns
@@ -877,14 +658,13 @@ await agent.stop()
 agent = BidiAgent(model=model)
 audio_io = BidiAudioIO()
 
-# run() handles start/stop automatically
 await agent.run(
     inputs=[audio_io.input()],
     outputs=[audio_io.output()]
 )
 ```
 
-Simplest for I/O-based applications with automatic lifecycle management.
+Simplest for I/O-based applications - handles start/stop automatically.
 
 #### Context Manager
 
@@ -896,12 +676,9 @@ async with agent:
     async for event in agent.receive():
         if isinstance(event, BidiResponseCompleteEvent):
             break
-# Automatic cleanup on exit
 ```
 
-**Note:** The context manager automatically calls `start()` on entry and `stop()` on exit. To pass `invocation_state`, call `start()` manually before entering the context or use manual lifecycle.
-
-Provides automatic `start()` and `stop()` with exception-safe cleanup.
+Automatic `start()` and `stop()` with exception-safe cleanup. To pass `invocation_state`, call `start()` manually before entering the context.
 
 #### Manual Lifecycle
 
@@ -916,10 +693,10 @@ try:
         if isinstance(event, BidiResponseCompleteEvent):
             break
 finally:
-    await agent.stop()  # Always cleanup
+    await agent.stop()
 ```
 
-Provides explicit control with custom error handling and flexible timing.
+Explicit control with custom error handling and flexible timing.
 
 ### Connection Restart
 
@@ -934,17 +711,7 @@ async for event in agent.receive():
         # Continue processing events normally
 ```
 
-**Restart Process:**
-
-1. Timeout detected
-2. `BidiConnectionRestartEvent` emitted
-3. Sending blocked via `_send_gate`
-4. `BidiBeforeConnectionRestartEvent` hook invoked
-5. Model stopped and restarted with history
-6. New receiver task spawned
-7. `BidiAfterConnectionRestartEvent` hook invoked
-8. Sending unblocked
-9. Conversation continues seamlessly
+The restart process: Timeout detected → `BidiConnectionRestartEvent` emitted → Sending blocked → Hooks invoked → Model restarted with history → New receiver task spawned → Sending unblocked → Conversation continues seamlessly.
 
 ### Error Handling
 
@@ -966,16 +733,20 @@ async for event in agent.receive():
 try:
     await agent.start()
     async for event in agent.receive():
-        # Process events
+        # Handle connection restart events
+        if isinstance(event, BidiConnectionRestartEvent):
+            print("Connection restarting, please wait...")
+            continue  # Connection restarts automatically
+        
+        # Process other events
         pass
-except BidiModelTimeoutError as e:
-    print(f"Connection timed out: {e}")
-    # Restart handled automatically if in receive loop
 except Exception as e:
     print(f"Unexpected error: {e}")
 finally:
     await agent.stop()
 ```
+
+**Note:** Connection timeouts are handled automatically. The agent emits `BidiConnectionRestartEvent` when reconnecting.
 
 #### Graceful Shutdown
 
@@ -1009,26 +780,15 @@ asyncio.run(main())
 
 ### Resource Cleanup
 
-The agent automatically cleans up:
-
-- **Background tasks**: All tasks in `_TaskPool` cancelled
-- **Model connection**: WebSocket/SDK connection closed
-- **I/O channels**: `stop()` called on all inputs/outputs
-- **Event queue**: Cleared and closed
-- **Hooks**: `BidiAfterInvocationEvent` invoked
+The agent automatically cleans up background tasks, model connections, I/O channels, event queues, and invokes cleanup hooks.
 
 ### Best Practices
 
 1. **Always Use try/finally**: Ensure `stop()` is called even on errors
-
 2. **Prefer Context Managers**: Use `async with` for automatic cleanup
-
 3. **Handle Restarts Gracefully**: Don't treat `BidiConnectionRestartEvent` as an error
-
 4. **Monitor Lifecycle Hooks**: Use hooks to track state transitions
-
 5. **Test Shutdown**: Verify cleanup works under various conditions
-
 6. **Avoid Calling stop() During receive()**: Only call `stop()` after exiting the receive loop
 
 ## Next Steps

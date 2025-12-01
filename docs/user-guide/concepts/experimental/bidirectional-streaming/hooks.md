@@ -6,6 +6,8 @@ Hooks provide a composable extensibility mechanism for extending `BidiAgent` fun
 
 The bidirectional streaming hooks system extends the standard agent hooks with additional events specific to real-time streaming conversations, such as connection lifecycle, interruptions, and connection restarts.
 
+For a comprehensive introduction to the hooks concept and general patterns, see the [Hooks documentation](../../agents/hooks.md). This guide focuses on bidirectional streaming-specific events and use cases.
+
 A **Hook Event** is a specific event in the lifecycle that callbacks can be associated with. A **Hook Callback** is a callback function that is invoked when the hook event is emitted.
 
 Hooks enable use cases such as:
@@ -334,61 +336,7 @@ class MyHook:
         await self.save_to_database(event.message)
 ```
 
-### Performance Considerations
-
-Keep hook callbacks lightweight to avoid blocking the event loop:
-
-```python
-class EfficientHook:
-    async def on_message_added(self, event: BidiMessageAddedEvent):
-        # Queue heavy processing for background execution
-        await self.queue.put(event.message)
-        
-        # Don't do heavy processing here
-        # ❌ await expensive_api_call()
-        # ❌ complex_computation()
-```
-
-### Error Handling
-
-Handle errors gracefully in hooks:
-
-```python
-class RobustHook:
-    async def on_message_added(self, event: BidiMessageAddedEvent):
-        try:
-            await self.process_message(event.message)
-        except Exception as e:
-            logger.error(f"Hook error: {e}")
-            # Don't let hook errors crash the agent
-```
-
-### Composability
-
-Design hooks to be composable and reusable:
-
-```python
-class LoggingHook:
-    """Reusable logging hook."""
-    
-    async def on_before_invocation(self, event: BidiBeforeInvocationEvent):
-        logger.info(f"Starting: {event.agent.agent_id}")
-    
-    async def on_after_invocation(self, event: BidiAfterInvocationEvent):
-        logger.info(f"Ended: {event.agent.agent_id}")
-
-class MetricsHook:
-    """Reusable metrics hook."""
-    
-    async def on_interruption(self, event: BidiInterruptionEvent):
-        metrics.increment("interruptions")
-
-# Combine multiple hooks
-agent = BidiAgent(
-    model=model,
-    hooks=[LoggingHook(), MetricsHook()]
-)
-```
+For additional best practices on performance considerations, error handling, composability, and advanced patterns, see the [Hooks documentation](../../agents/hooks.md).
 
 ## Next Steps
 

@@ -13,6 +13,8 @@ A bidirectional streaming session represents all stateful information needed by 
 
 Strands provides built-in session persistence capabilities that automatically capture and restore this information, allowing `BidiAgent` to seamlessly continue conversations where they left off, even after connection timeouts or application restarts.
 
+For a comprehensive introduction to session management concepts and general patterns, see the [Session Management documentation](../../agents/session-management.md). This guide focuses on bidirectional streaming-specific considerations and use cases.
+
 ## Basic Usage
 
 Create a `BidiAgent` with a session manager and use it:
@@ -190,135 +192,7 @@ agent = BidiAgent(
 
 The `BidiMessageAddedEvent` is emitted after the message is persisted, ensuring hooks see the saved state.
 
-## Best Practices
-
-### Session ID Management
-
-Use meaningful, unique session IDs:
-
-```python
-# Good: User-specific session IDs
-session_id = f"user_{user_id}_voice_{timestamp}"
-
-# Good: Device-specific for voice assistants
-session_id = f"device_{device_id}_session"
-
-# Avoid: Generic or reused IDs
-session_id = "session"  # ❌ Will overwrite previous sessions
-```
-
-### Session Cleanup
-
-Implement session cleanup for old or completed sessions:
-
-```python
-from datetime import datetime, timedelta
-from pathlib import Path
-
-def cleanup_old_sessions(storage_dir: str, days: int = 30):
-    """Remove sessions older than specified days."""
-    cutoff = datetime.now() - timedelta(days=days)
-    
-    for session_file in Path(storage_dir).glob("*.json"):
-        if session_file.stat().st_mtime < cutoff.timestamp():
-            session_file.unlink()
-            print(f"Removed old session: {session_file.name}")
-
-# Run periodically
-cleanup_old_sessions("/path/to/sessions", days=30)
-```
-
-### Error Handling
-
-Handle session loading errors gracefully:
-
-```python
-try:
-    session_manager = FileSessionManager(session_id=session_id)
-    agent = BidiAgent(model=model, session_manager=session_manager)
-    await agent.start()
-except Exception as e:
-    logger.error(f"Failed to load session: {e}")
-    # Fall back to new session
-    session_manager = FileSessionManager(session_id=f"{session_id}_new")
-    agent = BidiAgent(model=model, session_manager=session_manager)
-    await agent.start()
-```
-
-### Storage Considerations
-
-**FileSessionManager:**
-- Ensure sufficient disk space
-- Use fast storage (SSD) for better performance
-- Implement backup strategies
-- Consider file system limits on number of files
-
-**S3SessionManager:**
-- Configure appropriate S3 lifecycle policies
-- Use S3 versioning for recovery
-- Consider costs for storage and API calls
-- Implement proper IAM permissions
-
-## Troubleshooting
-
-### Session Not Loading
-
-If sessions aren't loading:
-
-```python
-# Verify session file exists
-from pathlib import Path
-
-session_file = Path(storage_dir) / f"{session_id}.json"
-if not session_file.exists():
-    print(f"Session file not found: {session_file}")
-
-# Check file permissions
-if not session_file.is_readable():
-    print(f"Cannot read session file: {session_file}")
-
-# Enable debug logging
-import logging
-logging.getLogger("strands.session").setLevel(logging.DEBUG)
-```
-
-### Session Corruption
-
-If a session file is corrupted:
-
-```python
-import json
-
-try:
-    with open(session_file) as f:
-        data = json.load(f)
-except json.JSONDecodeError as e:
-    print(f"Corrupted session file: {e}")
-    # Remove corrupted file and start fresh
-    session_file.unlink()
-```
-
-### S3 Permission Issues
-
-If S3 sessions fail:
-
-```python
-# Verify IAM permissions
-# Required permissions:
-# - s3:GetObject
-# - s3:PutObject
-# - s3:ListBucket
-
-# Test S3 access
-import boto3
-
-s3 = boto3.client('s3')
-try:
-    s3.head_bucket(Bucket='my-sessions')
-    print("S3 bucket accessible")
-except Exception as e:
-    print(f"S3 access error: {e}")
-```
+For best practices on session ID management, session cleanup, error handling, storage considerations, and troubleshooting, see the [Session Management documentation](../../agents/session-management.md).
 
 ## Next Steps
 

@@ -180,13 +180,6 @@ nav:
   - API Reference:
     - Agent: api-reference/agent.md
     - Event Loop: api-reference/event-loop.md
-    - Experimental:
-      - Overview: api-reference/experimental.md
-      - Bidirectional Streaming:
-        - Agent: api-reference/experimental/bidi/agent/agent.md
-        - Models: api-reference/experimental/bidi/models/model.md
-        - Events: api-reference/experimental/bidi/types/events.md
-        - IO: api-reference/experimental/bidi/io/io.md
     - Handlers: api-reference/handlers.md
     - Hooks: api-reference/hooks.md
     - Interrupt: api-reference/interrupt.md
@@ -196,6 +189,13 @@ nav:
     - Telemetry: api-reference/telemetry.md
     - Tools: api-reference/tools.md
     - Types: api-reference/types.md
+    - Experimental:
+      - Overview: api-reference/experimental.md
+      - Bidirectional Streaming:
+        - Agent: api-reference/experimental/bidi/agent/agent.md
+        - Models: api-reference/experimental/bidi/models/model.md
+        - Events: api-reference/experimental/bidi/types/events.md
+        - IO: api-reference/experimental/bidi/io/io.md
 
 exclude_docs: |
   node_modules
