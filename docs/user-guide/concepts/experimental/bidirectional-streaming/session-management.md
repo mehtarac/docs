@@ -44,6 +44,15 @@ await agent.run(
 
 The conversation history is automatically persisted and will be restored on the next session.
 
+## Provider-Specific Considerations
+
+### Gemini Live
+
+!!! warning "Limited Session Management Support"
+    Gemini Live does not yet have full session management support due to message history recording limitations in the current implementation. For connection restarts, Gemini Live uses Google's [session handlers](https://ai.google.dev/gemini-api/docs/live-session) to maintain conversation continuity within a single session, but conversation history is not persisted across application restarts.
+
+When using Gemini Live with connection restarts, the model leverages Google's built-in session handler mechanism to maintain context during reconnections within the same session lifecycle.
+
 ## Built-in Session Managers
 
 Strands offers two built-in session managers for persisting bidirectional streaming sessions:

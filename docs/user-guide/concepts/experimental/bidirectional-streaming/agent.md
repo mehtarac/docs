@@ -112,12 +112,12 @@ The bidirectional agent loop is fundamentally different from the standard agent 
 flowchart TB
     A[Agent Start] --> B[Model Connection]
     B --> C[Agent Loop]
-    C --> D[_run_model Task]
-    C --> E[_event_queue]
+    C --> D[Model Task]
+    C --> E[Event Queue]
     D --> E
     E --> F[receive]
     D --> G[Tool Detection]
-    G --> H[_run_tool Tasks]
+    G --> H[Tool Tasks]
     H --> E
     F --> I[User Code]
     I --> J[send]
@@ -144,61 +144,39 @@ flowchart TB
    - Calls `model.start(system_prompt, tools, messages)`
    - Establishes WebSocket/SDK connection
    - Sends conversation history if provided
-   - Spawns `_run_model()` background task
-   - Sets `_send_gate` to allow sending
+   - Spawns background task for model communication
+   - Enables sending capability
 
 3. **Event Processing**
    ```python
    async for event in agent.receive():
        # Process events
    ```
-   - Dequeues events from `_event_queue`
+   - Dequeues events from internal queue
    - Yields to user code
    - Continues until stopped
 
 #### Tool Execution
 
-Tools execute concurrently without blocking the conversation:
+Tools execute concurrently without blocking the conversation. When a tool is invoked:
 
-```python
-async def _run_tool(self, tool_use: ToolUse) -> None:
-    tool_results = []
-    
-    # Execute tool with invocation state
-    tool_events = self._agent.tool_executor._stream(
-        self._agent,
-        tool_use,
-        tool_results,
-        invocation_state,
-        structured_output_context=None,
-    )
-    
-    async for tool_event in tool_events:
-        await self._event_queue.put(tool_event)
-    
-    # Add paired messages to history
-    async with self._message_lock:
-        tool_use_message = {"role": "assistant", "content": [{"toolUse": tool_use}]}
-        tool_result_message = {"role": "user", "content": [{"toolResult": tool_result}]}
-        await self._add_messages(tool_use_message, tool_result_message)
-    
-    # Send result to model (unless stop_conversation tool)
-    if tool_use["name"] != "stop_conversation":
-        await self.send(tool_result_event)
-```
+1. The tool executor streams events as the tool runs
+2. Tool events are queued to the event loop
+3. Tool use and result messages are added atomically to conversation history
+4. Results are automatically sent back to the model
 
-Multiple tools run simultaneously with events queued as they occur. Tool use and result messages are added atomically to history, and results are automatically sent back to the model (except for the special `stop_conversation` tool which triggers shutdown).
+The special `stop_conversation` tool triggers agent shutdown instead of sending results back to the model.
 
 ### Connection Lifecycle
 
 #### Normal Operation
 
 ```
-User → send() → Model → receive() → _run_model() → _event_queue → receive() → User
+User → send() → Model → receive() → Model Task → Event Queue → receive() → User
                   ↓
               Tool Use
                   ↓
-            _run_tool() → _event_queue → receive() → User
+            Tool Task → Event Queue → receive() → User
                   ↓
             Tool Result → Model
 ```
