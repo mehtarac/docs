@@ -5,7 +5,7 @@
 ::: strands.experimental.bidi.types.agent
     options:
       heading_level: 2
-::: strands.experimental.bidi.types.bidi_model
+::: strands.experimental.bidi.types.model
     options:
       heading_level: 2
 ::: strands.experimental.bidi.types.events
