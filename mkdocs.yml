@@ -126,7 +126,6 @@ nav:
             - Nova Sonic: user-guide/concepts/experimental/bidirectional-streaming/models/nova_sonic.md
             - Gemini Live: user-guide/concepts/experimental/bidirectional-streaming/models/gemini_live.md
             - OpenAI Realtime: user-guide/concepts/experimental/bidirectional-streaming/models/openai_realtime.md
-          - Events: user-guide/concepts/experimental/bidirectional-streaming/types/events.md
           - IO: user-guide/concepts/experimental/bidirectional-streaming/io/io.md
     - Safety & Security:
       - Responsible AI: user-guide/safety-security/responsible-ai.md
