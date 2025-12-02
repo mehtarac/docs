@@ -1,4 +1,7 @@
-# Session Management
+# Session Management [Experimental]
+
+!!! warning "Experimental Feature"
+    This feature is experimental and may change in future versions. Use with caution in production environments.
 
 Session management for `BidiAgent` provides a mechanism for persisting conversation history and agent state across bidirectional streaming sessions. This enables voice assistants and interactive applications to maintain context and continuity even when connections are restarted or the application is redeployed.
 

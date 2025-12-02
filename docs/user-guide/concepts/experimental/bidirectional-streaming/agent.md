@@ -1,4 +1,7 @@
-# BidiAgent
+# BidiAgent [Experimental]
+
+!!! warning "Experimental Feature"
+    This feature is experimental and may change in future versions. Use with caution in production environments.
 
 The `BidiAgent` is a specialized agent designed for real-time bidirectional streaming conversations. Unlike the standard `Agent` that follows a request-response pattern, `BidiAgent` maintains persistent connections that enable continuous audio and text streaming, real-time interruptions, and concurrent tool execution.
 

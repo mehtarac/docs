@@ -1,4 +1,7 @@
-# Events
+# Events [Experimental]
+
+!!! warning "Experimental Feature"
+    This feature is experimental and may change in future versions. Use with caution in production environments.
 
 Bidirectional streaming events enable real-time monitoring and processing of audio, text, and tool execution during persistent conversations. Unlike standard streaming which uses async iterators or callbacks, bidirectional streaming uses `send()` and `receive()` methods for explicit control over the conversation flow.
 
