@@ -1,4 +1,7 @@
-# Nova Sonic
+# Nova Sonic [Experimental]
+
+!!! warning "Experimental Feature"
+    This feature is experimental and may change in future versions. Use with caution in production environments.
 
 [Amazon Nova Sonic](https://docs.aws.amazon.com/nova/latest/userguide/speech.html) provides real-time, conversational interactions through bidirectional audio streaming. Amazon Nova Sonic processes and responds to real-time speech as it occurs, enabling natural, human-like conversational experiences. Key capabilities and features include:
 

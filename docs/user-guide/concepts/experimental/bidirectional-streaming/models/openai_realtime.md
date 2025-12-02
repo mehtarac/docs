@@ -1,4 +1,7 @@
-# OpenAI Realtime
+# OpenAI Realtime [Experimental]
+
+!!! warning "Experimental Feature"
+    This feature is experimental and may change in future versions. Use with caution in production environments.
 
 The [OpenAI Realtime API](https://platform.openai.com/docs/guides/realtime) is a speech-to-speech interface that enables low-latency, natural voice conversations with AI. Key features include:
 
