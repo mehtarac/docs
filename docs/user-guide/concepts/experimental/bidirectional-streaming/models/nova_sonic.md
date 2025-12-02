@@ -96,7 +96,7 @@ For more details on this approach, please refer to the [boto3 session docs](http
 | Parameter | Description | Example | Options |
 | --------- | ----------- | ------- | ------- |
 | `audio` | `AudioConfig` instance. | `{"voice": "tiffany"}` | [reference](../../../../../api-reference/experimental/bidi/types.md#strands.experimental.bidi.types.model.AudioConfig) |
-| `inference` | Session start `inferenceConfiguration`'s (as snake_case). | `{"top_p": 0.9}` | [reference](https://docs.aws.amazon.com/nova/latest/userguide/input-events.html)
+| `inference` | Session start `inferenceConfiguration`'s (as camelCase). | `{"topP": 0.9}` | [reference](https://docs.aws.amazon.com/nova/latest/userguide/input-events.html)
 
 ## Troubleshooting
 
